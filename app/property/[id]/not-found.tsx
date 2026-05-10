@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -9,10 +9,10 @@ export default function NotFound() {
       <p className="text-muted-foreground mb-6">
         This listing may have been removed or the link is incorrect.
       </p>
-      <Button render={<Link href="/" />} variant="outline">
+      <Link href="/" className={buttonVariants({ variant: "outline" })}>
         <ArrowLeft size={14} className="mr-1.5" />
         Back to listings
-      </Button>
+      </Link>
     </div>
   );
 }

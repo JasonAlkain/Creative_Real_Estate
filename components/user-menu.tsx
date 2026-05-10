@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import { useUser } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export function UserMenu() {
   const user = useUser();
@@ -20,9 +20,9 @@ export function UserMenu() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" render={<Link href="/login" />}>
+        <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
           Log in
-        </Button>
+        </Link>
       </div>
     );
   }

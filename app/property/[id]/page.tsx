@@ -5,9 +5,10 @@ import { getProperty } from "@/lib/db/properties";
 import { PhotoGallery } from "@/components/property/photo-gallery";
 import { FinancingBadges } from "@/components/property/financing-badges";
 import { FinancingTerms } from "@/components/property/financing-terms";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 function formatPrice(price: number | null) {
   if (!price) return "Price not listed";
@@ -175,20 +176,15 @@ export default async function PropertyPage({
               </span>
             </Button>
           ) : (
-            <Button
-              variant="outline"
-              className="w-full"
-              render={
-                <a
-                  href={property.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                />
-              }
+            <a
+              href={property.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full")}
             >
               <ExternalLink size={14} className="mr-1.5" />
               View on Original Site
-            </Button>
+            </a>
           )}
 
           <Button variant="outline" className="w-full" disabled>

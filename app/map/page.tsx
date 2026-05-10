@@ -1,10 +1,22 @@
-export default function MapPage() {
+import { createSearchParamsCache } from "nuqs/server";
+import { filterParsers } from "@/lib/filters";
+import { queryProperties } from "@/lib/db/properties-query";
+import { MapClient } from "./map-client";
+
+const cache = createSearchParamsCache(filterParsers);
+
+export default async function MapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const parsed = cache.parse(await searchParams);
+  const properties = await queryProperties(parsed);
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-2">Map View</h1>
-      <p className="text-muted-foreground">
-        Mapbox map with property pins — coming in Checkpoint 3.
-      </p>
+    <div className="h-[calc(100vh-3.5rem)] w-full">
+      <MapClient properties={properties} token={token} />
     </div>
   );
 }
