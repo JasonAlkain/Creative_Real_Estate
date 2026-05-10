@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Property } from "@/types";
+import type { Property, SavedStatus } from "@/types";
 import type { FilterState } from "@/lib/filters";
 
 const GILLETTE_LAT = 44.291;
@@ -11,7 +11,7 @@ function haversineDistanceMi(
   lat2: number,
   lng2: number
 ): number {
-  const R = 3958.8; // Earth radius in miles
+  const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
@@ -22,10 +22,16 @@ function haversineDistanceMi(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export type PropertyWithDistance = Property & { distanceMi: number | null };
+export type PropertyWithDistance = Property & {
+  distanceMi: number | null;
+  isSaved: boolean;
+  savedStatus: SavedStatus | null;
+  savedId: string | null;
+};
 
 export async function queryProperties(
-  filters: Partial<FilterState>
+  filters: Partial<FilterState>,
+  userId?: string
 ): Promise<PropertyWithDistance[]> {
   const supabase = await createClient();
 
@@ -50,7 +56,6 @@ export async function queryProperties(
     );
   }
 
-  // Fetch all and sort/filter distance client-side (dataset is small)
   const sort = filters.sort ?? "newest";
   if (sort !== "distance") {
     if (sort === "newest")
@@ -64,6 +69,21 @@ export async function queryProperties(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
+  // Fetch saved state in one query (not N+1)
+  let savedMap = new Map<string, { id: string; status: SavedStatus }>();
+  if (userId) {
+    const { data: savedData } = await supabase
+      .from("saved_properties")
+      .select("property_id, id, status")
+      .eq("user_id", userId);
+    savedMap = new Map(
+      (savedData ?? []).map((s) => [
+        s.property_id as string,
+        { id: s.id as string, status: s.status as SavedStatus },
+      ])
+    );
+  }
+
   const centerLat = filters.lat ?? GILLETTE_LAT;
   const centerLng = filters.lng ?? GILLETTE_LNG;
 
@@ -72,10 +92,16 @@ export async function queryProperties(
       p.lat != null && p.lng != null
         ? haversineDistanceMi(centerLat, centerLng, p.lat, p.lng)
         : null;
-    return { ...(p as Property), distanceMi };
+    const savedEntry = savedMap.get(p.id);
+    return {
+      ...(p as Property),
+      distanceMi,
+      isSaved: !!savedEntry,
+      savedStatus: savedEntry?.status ?? null,
+      savedId: savedEntry?.id ?? null,
+    };
   });
 
-  // Distance radius filter (JS-side)
   if (filters.radiusMi != null) {
     results = results.filter(
       (p) => p.distanceMi == null || p.distanceMi <= filters.radiusMi!

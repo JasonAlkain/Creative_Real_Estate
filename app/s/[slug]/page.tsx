@@ -1,51 +1,38 @@
 import { notFound } from "next/navigation";
-import { getProperty } from "@/lib/db/properties";
-import { getUser } from "@/lib/supabase/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/server";
 import { PropertyDetail } from "@/components/property/property-detail";
 import type { SavedData } from "@/components/property/property-detail";
-import type { SavedStatus } from "@/types";
+import type { Property, SavedStatus } from "@/types";
 
-function formatPrice(price: number | null) {
-  if (!price) return "Price not listed";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-export async function generateMetadata({
+export default async function SharePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) return { title: "Property not found" };
-  return {
-    title: `${property.address} — Creative RE`,
-    description: `${formatPrice(property.price)} · ${property.beds ?? "?"} bd · ${property.baths ?? "?"} ba`,
-  };
-}
+  const { slug } = await params;
+  const supabase = await createClient();
 
-export default async function PropertyPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const [property, user] = await Promise.all([getProperty(id), getUser()]);
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("*, property:properties(*)")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (!link) notFound();
+  if (link.expires_at && new Date(link.expires_at) < new Date()) notFound();
+
+  const property = link.property as Property;
   if (!property) notFound();
 
+  const user = await getUser();
   let savedData: SavedData = null;
   if (user) {
-    const supabase = await createClient();
     const { data } = await supabase
       .from("saved_properties")
       .select("id, status, notes, created_at")
       .eq("user_id", user.id)
-      .eq("property_id", id)
+      .eq("property_id", property.id)
       .maybeSingle();
     if (data) {
       savedData = {
@@ -68,7 +55,7 @@ export default async function PropertyPage({
       property={property}
       savedData={savedData}
       isLoggedIn={!!user}
-      shareMode={false}
+      shareMode={true}
       staticMapUrl={staticMapUrl}
     />
   );

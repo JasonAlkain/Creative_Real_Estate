@@ -3,7 +3,6 @@ import { SlidersHorizontal } from "lucide-react";
 import { filterParsers } from "@/lib/filters";
 import { queryProperties } from "@/lib/db/properties-query";
 import { getUser } from "@/lib/supabase/server";
-import { getSavedPropertyIds } from "@/lib/db/properties";
 import { PropertyCard } from "@/components/property/property-card";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { ActiveFilterChips } from "@/components/filters/active-filter-chips";
@@ -25,15 +24,8 @@ export default async function Home({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const parsed = cache.parse(await searchParams);
-
-  const [properties, user] = await Promise.all([
-    queryProperties(parsed),
-    getUser(),
-  ]);
-
-  const savedIds = user
-    ? await getSavedPropertyIds(user.id)
-    : new Set<string>();
+  const user = await getUser();
+  const properties = await queryProperties(parsed, user?.id);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -106,7 +98,9 @@ export default async function Home({
                 <PropertyCard
                   key={p.id}
                   property={p}
-                  isSaved={savedIds.has(p.id)}
+                  isSaved={p.isSaved}
+                  savedStatus={p.savedStatus}
+                  isLoggedIn={!!user}
                 />
               ))}
             </div>
