@@ -11,6 +11,7 @@ import {
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { UserMenu } from "@/components/user-menu";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -35,7 +36,7 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
               : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}
         >
-          <Icon size={16} />
+          <Icon size={15} />
           {label}
         </Link>
       ))}
@@ -56,12 +57,19 @@ export function Nav() {
           <NavLinks />
         </nav>
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* User menu — desktop */}
+        <div className="hidden md:block">
+          <UserMenu />
+        </div>
+
         {/* Mobile nav */}
-        <div className="flex md:hidden ml-auto">
+        <div className="flex md:hidden items-center gap-2">
+          <UserMenu />
           <Sheet>
-            <SheetTrigger
-              render={<Button variant="ghost" size="icon" />}
-            >
+            <SheetTrigger render={<Button variant="ghost" size="icon" />}>
               <Menu size={18} />
               <span className="sr-only">Menu</span>
             </SheetTrigger>
